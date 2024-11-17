@@ -18,8 +18,33 @@ def get_matches(image1, image2) -> typing.Tuple[
     bf = cv2.BFMatcher()
     matches_1_to_2: typing.Sequence[typing.Sequence[cv2.DMatch]] = bf.knnMatch(descriptors1, descriptors2, k=2)
 
-    # YOUR CODE HERE
+    ratio = 0.75
 
+    good_matches_1_to_2 = []
+    for m, n in matches_1_to_2:
+        if m.distance < ratio * n.distance:
+            good_matches_1_to_2.append(m)
+
+    matches_2_to_1 = bf.knnMatch(descriptors2, descriptors1, k=2)
+
+    good_matches_2_to_1 = []
+    for m, n in matches_2_to_1:
+        if m.distance < ratio * n.distance:
+            good_matches_2_to_1.append(m)
+
+    matches_1_to_2_dict = {m.queryIdx: m.trainIdx for m in good_matches_1_to_2}
+    matches_2_to_1_dict = {m.queryIdx: m.trainIdx for m in good_matches_2_to_1}
+
+    mutual_matches = []
+    for queryIdx, trainIdx in matches_1_to_2_dict.items():
+        if trainIdx in matches_2_to_1_dict:
+            if matches_2_to_1_dict[trainIdx] == queryIdx:
+                mutual_match = next(
+                    (m for m in good_matches_1_to_2 if m.queryIdx == queryIdx and m.trainIdx == trainIdx), None)
+                if mutual_match is not None:
+                    mutual_matches.append(mutual_match)
+
+    return kp1, kp2, mutual_matches
 
 def get_second_camera_position(kp1, kp2, matches, camera_matrix):
     coordinates1 = np.array([kp1[match.queryIdx].pt for match in matches])
