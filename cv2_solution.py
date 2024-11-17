@@ -65,8 +65,35 @@ def triangulation(
         kp2: typing.Sequence[cv2.KeyPoint],
         matches: typing.Sequence[cv2.DMatch]
 ):
-    pass
-    # YOUR CODE HERE
+    num_matches = len(matches)
+
+    if num_matches == 0:
+        return np.empty((0, 3))
+
+    P1 = camera_matrix @ np.hstack((camera1_rotation_matrix, camera1_translation_vector))
+
+    P2 = camera_matrix @ np.hstack((camera2_rotation_matrix, camera2_translation_vector))
+
+    points1 = np.zeros((2, num_matches), dtype=np.float64)
+    points2 = np.zeros((2, num_matches), dtype=np.float64)
+
+    for i, match in enumerate(matches):
+        pt1 = kp1[match.queryIdx].pt  # (x, y) in image1
+        pt2 = kp2[match.trainIdx].pt  # (x, y) in image2
+
+        points1[0, i] = pt1[0]
+        points1[1, i] = pt1[1]
+
+        points2[0, i] = pt2[0]
+        points2[1, i] = pt2[1]
+
+    homogeneous_points = cv2.triangulatePoints(P1, P2, points1, points2)
+
+    points_3d = homogeneous_points[:3, :] / homogeneous_points[3, :]
+
+    points_3d = points_3d.T
+
+    return points_3d
 
 
 # Task 4
